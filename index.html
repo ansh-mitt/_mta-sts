@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Askly — AI Assistant</title>
+    <style>
+      :root { --ink:#172033; --muted:#738095; --line:#e8ebf1; --blue:#4f46e5; --blue-dark:#3931c8; --surface:#fff; }
+      * { box-sizing:border-box; }
+      body { margin:0; min-height:100vh; color:var(--ink); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:radial-gradient(circle at 8% 5%, #e4e9ff 0, transparent 28rem), radial-gradient(circle at 95% 90%, #e8f8f4 0, transparent 28rem), #f8f9fc; }
+      .app { width:min(920px, calc(100% - 32px)); height:min(780px, calc(100vh - 48px)); margin:24px auto; display:flex; flex-direction:column; overflow:hidden; background:rgba(255,255,255,.89); border:1px solid rgba(222,226,239,.9); border-radius:24px; box-shadow:0 24px 70px rgba(35,42,75,.12); backdrop-filter:blur(14px); }
+      header { display:flex; align-items:center; justify-content:space-between; padding:22px 28px; border-bottom:1px solid var(--line); }
+      .brand { display:flex; align-items:center; gap:11px; font-size:19px; font-weight:760; letter-spacing:-.6px; }
+      .mark { display:grid; place-items:center; width:33px; height:33px; color:#fff; border-radius:10px; background:linear-gradient(135deg,#6c63f6,#4038c9); box-shadow:0 6px 16px #5b53d044; font-size:17px; }
+      .status { display:flex; align-items:center; gap:7px; font-size:13px; color:#4d6270; font-weight:600; }
+      .dot { width:8px; height:8px; border-radius:99px; background:#2cb67d; box-shadow:0 0 0 3px #ddf7ec; }
+      #chat { flex:1; overflow:auto; padding:34px 10.5% 20px; scroll-behavior:smooth; }
+      .intro { max-width:570px; margin:56px auto 25px; text-align:center; }
+      .intro h1 { margin:0 0 11px; font-size:clamp(28px,5vw,42px); letter-spacing:-1.8px; line-height:1.08; }
+      .intro p { margin:0; color:var(--muted); font-size:16px; line-height:1.55; }
+      .suggestions { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin:28px auto; }
+      .suggestion { padding:10px 13px; color:#556079; background:#fff; border:1px solid var(--line); border-radius:12px; font:500 13px inherit; cursor:pointer; transition:.18s ease; }
+      .suggestion:hover { color:var(--blue); border-color:#bdb9ff; transform:translateY(-1px); box-shadow:0 5px 14px #6260ae19; }
+      .message { display:flex; gap:11px; margin:20px 0; align-items:flex-start; animation:rise .25s ease-out; }
+      .message.user { flex-direction:row-reverse; }
+      .avatar { flex:0 0 auto; display:grid; place-items:center; width:31px; height:31px; border-radius:10px; background:#e9e8ff; color:var(--blue); font-weight:800; font-size:13px; }
+      .user .avatar { color:#fff; background:#27334b; }
+      .bubble { max-width:76%; padding:12px 15px; border-radius:5px 16px 16px; color:#2c3951; background:#f0f2f7; font-size:15px; line-height:1.5; white-space:pre-wrap; }
+      .user .bubble { color:#fff; border-radius:16px 5px 16px 16px; background:linear-gradient(135deg,#5951ed,#443bcf); }
+      .typing { display:none; align-items:center; gap:5px; width:max-content; padding:14px 17px; }
+      .typing span { width:6px; height:6px; border-radius:50%; background:#7a85a0; animation:bounce 1s infinite alternate; }
+      .typing span:nth-child(2){animation-delay:.18s}.typing span:nth-child(3){animation-delay:.36s}
+      form { margin:0 24px 22px; display:flex; align-items:flex-end; gap:10px; padding:9px 10px 9px 16px; background:#fff; border:1px solid #dce1eb; border-radius:17px; box-shadow:0 9px 25px rgba(36,42,68,.06); }
+      textarea { flex:1; min-height:28px; max-height:120px; resize:none; padding:4px 0; border:0; outline:0; color:var(--ink); font:15px/1.4 inherit; }
+      textarea::placeholder { color:#9ba5b5; }
+      button.send { display:grid; place-items:center; width:37px; height:37px; color:#fff; border:0; border-radius:12px; background:var(--blue); cursor:pointer; transition:.18s ease; }
+      button.send:hover { background:var(--blue-dark); transform:translateY(-1px); } button.send:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+      .hint { position:absolute; opacity:0; }
+      @keyframes rise { from{opacity:0;transform:translateY(7px)} to{opacity:1;transform:none} } @keyframes bounce { to{transform:translateY(-4px);opacity:.45} }
+      @media(max-width:600px){.app{width:100%;height:100vh;margin:0;border-radius:0}.status{display:none}header{padding:18px 20px}#chat{padding:20px 20px}.intro{margin-top:35px}.bubble{max-width:84%}form{margin:0 14px 14px}}
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header><div class="brand"><div class="mark">✦</div>Askly</div><div class="status"><span class="dot"></span>Model online</div></header>
+      <section id="chat" aria-live="polite">
+        <div class="intro" id="intro"><h1>What would you like to know?</h1><p>Ask a question and get a thoughtful answer, right here in the conversation.</p></div>
+        <div class="suggestions" id="suggestions"><button class="suggestion">Explain quantum computing simply</button><button class="suggestion">Help me plan my day</button><button class="suggestion">Give me a healthy dinner idea</button></div>
+        <div class="message"><div class="avatar">✦</div><div class="bubble">Hi! I’m Askly. What can I help you explore today?</div></div>
+        <div class="message" id="typing" style="display:none"><div class="avatar">✦</div><div class="bubble typing"><span></span><span></span><span></span></div></div>
+      </section>
+      <form id="questionForm"><label class="hint" for="question">Your question</label><textarea id="question" rows="1" placeholder="Message Askly..." autofocus></textarea><button class="send" type="submit" aria-label="Send message">➤</button></form>
+    </main>
+    <script>
+      const form = document.getElementById('questionForm'), input = document.getElementById('question'), chat = document.getElementById('chat');
+      const typing = document.getElementById('typing'), intro = document.getElementById('intro'), suggestions = document.getElementById('suggestions');
+      function addMessage(text, role) { const msg = document.createElement('div'); msg.className = `message ${role}`; msg.innerHTML = `<div class="avatar">${role === 'user' ? 'You' : '✦'}</div><div class="bubble"></div>`; msg.querySelector('.bubble').textContent = text; chat.insertBefore(msg, typing); chat.scrollTop = chat.scrollHeight; }
+      async function send(text) { const question = text.trim(); if (!question) return; intro.style.display = 'none'; suggestions.style.display = 'none'; addMessage(question, 'user'); input.value = ''; input.style.height = 'auto'; typing.style.display = 'flex'; chat.scrollTop = chat.scrollHeight; form.querySelector('button').disabled = true; try { const response = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) }); const payload = await response.json(); if (!response.ok) throw new Error(payload.error || 'Unable to get an answer.'); addMessage(payload.answer, 'assistant'); } catch (error) { addMessage(error.message || 'Unable to reach the RAG service. Start it with “uv run python -m study_assistant.chatbot.terminal_chat serve”.', 'assistant'); } finally { typing.style.display = 'none'; form.querySelector('button').disabled = false; input.focus(); } }
+      form.addEventListener('submit', e => { e.preventDefault(); send(input.value); });
+      input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 120) + 'px'; });
+      input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+      document.querySelectorAll('.suggestion').forEach(button => button.addEventListener('click', () => send(button.textContent)));
+    </script>
+  </body>
+</html>
